@@ -3,7 +3,6 @@
 ~mix = 0.08;
 ~room = 0.999;
 
-
 ~oled.screen(1,format("Damp: %",~damp.round(1e-4)));
 ~oled.screen(2,format("Mix: %",~mix.round(1e-4)));
 ~oled.screen(3,format("Room: %",~room.round(1e-4)));
@@ -54,7 +53,10 @@ SynthDef.new(\reverbDef, {
 }).add;
 
 SynthDef.new(\inLRDef, {
-	Out.ar(~effectsBus, SoundIn.ar([0,1]));
+	var inSig,inScale;
+	inScale = 0.1
+	inSig = SoundIn.ar([0,1]) * inScale;
+	Out.ar(~effectsBus, inSig);
 }).add;
 
 // Make sure the SynthDefs are ready before we use them
