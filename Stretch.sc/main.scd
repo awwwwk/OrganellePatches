@@ -16,15 +16,15 @@
 	switch (knob,
 		0, {
 			~stretch = value.linlin(0,1,10,100).asInteger;
+			~oled.screen(1,format("Stretch: %",~stretch.asInteger));
+			~stretchL.set(\stretch, ~stretch);
+			~stretchR.set(\stretch, ~stretch);
+		},
+		1, {
+			~hpf = value.linlin(0,1,20,2000).asInteger;
 			~oled.screen(2,format("Cutoff: % Hz",~hpf.asInteger));
 			~stretchL.set(\hpf, ~hpf);
 			~stretchR.set(\hpf, ~hpf);
-		},
-		1, {
-			~hpf = value;
-			~oled.screen(2,format("Pan: %",~pan.round(1e-2)));
-			~stretchL.set(\pan, ~pan);
-			~stretchR.set(\pan, ~pan);
 		},
 		2, {
 			~dry = value;
@@ -113,21 +113,6 @@ SynthDef(\recBufDef, {
 	);
 }).add;
 
-/*
-SynthDef.new(\reverbDef, {
-	arg in=0, mix=0.08, room=0.999, damp=0.85, out=0;
-	var sig;
-	sig = In.ar(~effectsBus, 2);
-	sig = FreeVerb2.ar(
-		sig[0], sig[1],
-		mix: mix.varlag(2),
-		room: room,
-		damp: damp
-	);
-	Out.ar(~outL, sig);
-}).add;
-*/
-
 SynthDef.new(\dryDef, {
 	arg amp = 1;
 	var in;
@@ -151,7 +136,7 @@ s.sync;
 		out: ~outL,
 		bufnum: ~recBufL.bufnum,
 		envBufnum: ~envBuf.bufnum,
-		stretch: 100,
+		stretch: ~stretch,
 		amp: ~wet,
 		hpf: ~hpf
 	]
@@ -161,7 +146,7 @@ s.sync;
 		out: ~outR,
 		bufnum: ~recBufR.bufnum,
 		envBufnum: ~envBuf.bufnum,
-		stretch: 100,
+		stretch: ~stretch,
 		amp: ~wet
 		hpf: ~hpf
 	]
