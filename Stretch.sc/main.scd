@@ -78,7 +78,7 @@
 ~envBuf.loadCollection(~envSignal);
 
 // SynthDefs
-SynthDef(\paulstretchMono, { |out = 0, bufnum, envBufnum, pan = 0.5, stretch = 50, window = 0.25, amp = 1, hpf = 20|
+SynthDef(\paulstretchMono, { |out = 0, bufnum, envBufnum, pan = 0.5, stretch = 50, window = 0.05, amp = 1, hpf = 20|
 	// Paulstretch for SuperCollider
 	// Based on the Paul's Extreme Sound Stretch algorithm by Nasca Octavian PAUL
 	// https://github.com/paulnasca/paulstretch_python/blob/master/paulstretch_steps.png
