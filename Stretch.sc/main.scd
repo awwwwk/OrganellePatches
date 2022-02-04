@@ -1,10 +1,10 @@
 // initialize parameters and screen
-~stretch = 50;
+~stretchVal = 50;
 ~hpf = 20;
 ~dry = 0.5;
 ~wet = 0.5;
 
-~oled.screen(1,format("Stretch: %x",~stretch));
+~oled.screen(1,format("Stretch: %x",~stretchVal));
 ~oled.screen(2,format("Cutoff: % Hz",~hpf.asInteger));
 ~oled.screen(3,format("Dry: %",~dry.round(1e-2)));
 ~oled.screen(4,format("Wet: %",~wet.round(1e-2)));
@@ -15,16 +15,14 @@
 	arg func, msg, knob, value;
 	switch (knob,
 		0, {
-			~stretch = value.linlin(0,1,10,100).asInteger;
-			~oled.screen(1,format("Stretch: %",~stretch.asInteger));
-			~stretchL.set(\stretch, ~stretch);
-			~stretchR.set(\stretch, ~stretch);
+			~stretchVal = value.linlin(0,1,10,100).asInteger;
+			~oled.screen(1,format("Stretch: %x",~stretchVal.asInteger));
+			~stretchSig.set(\stretch, ~stretchVal);
 		},
 		1, {
 			~hpf = value.linlin(0,1,20,2000).asInteger;
 			~oled.screen(2,format("Cutoff: % Hz",~hpf.asInteger));
-			~stretchL.set(\hpf, ~hpf);
-			~stretchR.set(\hpf, ~hpf);
+			~stretchSig.set(\hpf, ~hpf);
 		},
 		2, {
 			~dry = value;
@@ -34,8 +32,7 @@
 		3, {
 			~wet = value;
 			~oled.screen(4,format("Wet: %",~wet.round(1e-2)));
-			~stretchL.set(\amp, ~wet);
-			~stretchR.set(\amp, ~wet);
+			~stretchSig.set(\amp, ~wet);
 		}
 	);
 };
@@ -48,14 +45,12 @@
 	arg func, msg, key, vel;
 	if (key,
 		{
-			~recL.set(\preLevel, 1);
-			~recR.set(\preLevel, 1);
+			~recMix.set(\preLevel, 1);
 			~led.value(3);
 			~oled.screen(5,"Stretch.sc ...");
 		},
 		{
-			~recL.set(\preLevel, 0);
-			~recR.set(\preLevel, 0);
+			~recMix.set(\preLevel, 0);
 			~led.value(0);
 			~oled.screen(5,"Stretch.sc");
 		}
@@ -67,18 +62,13 @@
 
 
 // setup buses and groups
-//~effectsBus = Bus.audio(s, 2);
-//~srcGroup = Group.new;
-//~effectsGroup = Group.after(~srcGroup);
-
-~recBufL = Buffer.alloc(s, 44100 * 4.0, 1);
-~recBufR = Buffer.alloc(s, 44100 * 4.0, 1);
+~recBuf = Buffer.alloc(s, 44100 * 4.0, 1);
 ~envBuf = Buffer.alloc(s, s.sampleRate, 1);
 ~envSignal = Signal.newClear(s.sampleRate).waveFill({|x| (1 - x.pow(2)).pow(1.25)}, -1.0, 1.0);
 ~envBuf.loadCollection(~envSignal);
 
 // SynthDefs
-SynthDef(\paulstretchMono, { |out = 0, bufnum, envBufnum, pan = 0.5, stretch = 50, window = 0.05, amp = 1, hpf = 20|
+SynthDef(\paulstretch, { |out = 0, bufnum, envBufnum, pan = 0.5, stretch = 50, window = 0.05, amp = 1, hpf = 20|
 	// Paulstretch for SuperCollider
 	// Based on the Paul's Extreme Sound Stretch algorithm by Nasca Octavian PAUL
 	// https://github.com/paulnasca/paulstretch_python/blob/master/paulstretch_steps.png
@@ -127,9 +117,9 @@ SynthDef(\paulstretchMono, { |out = 0, bufnum, envBufnum, pan = 0.5, stretch = 5
 }).add;
 
 SynthDef(\recBufDef, {
-	arg channel = 0, bufnum = 0, preLevel = 0, loop = 1, run = 1;
+	arg bufnum = 0, preLevel = 0, loop = 1, run = 1;
 	RecordBuf.ar(
-		inputArray: SoundIn.ar(channel),
+		inputArray: Mix.new(SoundIn.ar([0,1])),
 		bufnum: bufnum,
 		preLevel: preLevel,
 		loop: loop,
@@ -147,31 +137,16 @@ SynthDef.new(\dryDef, {
 // Make sure the SynthDefs are ready before we use them
 s.sync;
 
-// Setup the input and effects
-
+// Setup the input, record buffer, and stretch
 ~dryLR = Synth(\dryDef, [amp: ~dry]);
-//~dryLR = Synth(\dryDef, [amp: ~dry]);
-//~dryLR.set(\amp, 0.5);
-
-~recL = Synth(\recBufDef,[channel: 0, bufnum: ~recBufL]);
-~recR = Synth(\recBufDef,[channel: 1, bufnum: ~recBufR]);
-~stretchL = Synth(\paulstretchMono,
+~recMix = Synth(\recBufDef,[bufnum: ~recBuf]);
+~stretchSig = Synth(\paulstretch,
 	[
 		out: ~outL,
-		bufnum: ~recBufL.bufnum,
+		bufnum: ~recBuf.bufnum,
 		envBufnum: ~envBuf.bufnum,
 		stretch: ~stretch,
 		amp: ~wet,
-		hpf: ~hpf
-	]
-);
-~stretchR = Synth(\paulstretchMono,
-	[
-		out: ~outR,
-		bufnum: ~recBufR.bufnum,
-		envBufnum: ~envBuf.bufnum,
-		stretch: ~stretch,
-		amp: ~wet
 		hpf: ~hpf
 	]
 );
