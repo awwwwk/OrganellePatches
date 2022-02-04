@@ -43,6 +43,29 @@
 // register knob callback
 ~knobs.addDependant(~knobfunc);
 
+// create aux callback
+~auxfunc = {
+	arg func, msg, key, vel;
+	if (key,
+		{
+			~recL.set(\preLevel, 1);
+			~recR.set(\preLevel, 1);
+			~led.value(3);
+			~oled.screen(5,"Stretch.sc ...");
+		},
+		{
+			~recL.set(\preLevel, 0);
+			~recR.set(\preLevel, 0);
+			~led.value(0);
+			~oled.screen(5,"Stretch.sc");
+		}
+	);
+};
+
+// register aux callback
+~aux.addDependant(~auxfunc);
+
+
 // setup buses and groups
 //~effectsBus = Bus.audio(s, 2);
 //~srcGroup = Group.new;
@@ -104,10 +127,11 @@ SynthDef(\paulstretchMono, { |out = 0, bufnum, envBufnum, pan = 0.5, stretch = 5
 }).add;
 
 SynthDef(\recBufDef, {
-	arg channel = 0, bufnum = 0, loop = 1, run = 1;
+	arg channel = 0, bufnum = 0, preLevel = 0, loop = 1, run = 1;
 	RecordBuf.ar(
 		inputArray: SoundIn.ar(channel),
 		bufnum: bufnum,
+		preLevel: preLevel,
 		loop: loop,
 		run: run
 	);
