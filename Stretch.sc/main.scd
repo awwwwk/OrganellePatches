@@ -1,11 +1,11 @@
 // initialize parameters and screen
 ~stretch = 50;
-~pan = 0;
+~hpf = 20;
 ~dry = 0.5;
 ~wet = 0.5;
 
-~oled.screen(1,format("Stretch: %",~stretch));
-~oled.screen(2,format("Pan: %",~pan.round(1e-2)));
+~oled.screen(1,format("Stretch: %x",~stretch));
+~oled.screen(2,format("Cutoff: % Hz",~hpf.asInteger));
 ~oled.screen(3,format("Dry: %",~dry.round(1e-2)));
 ~oled.screen(4,format("Wet: %",~wet.round(1e-2)));
 ~oled.screen(5,"Stretch.sc");
@@ -16,12 +16,12 @@
 	switch (knob,
 		0, {
 			~stretch = value.linlin(0,1,10,100).asInteger;
-			~oled.screen(1,format("Stretch: %",~stretch.asInteger));
-			~stretchL.set(\stretch, ~stretch);
-			~stretchR.set(\stretch, ~stretch);
+			~oled.screen(2,format("Cutoff: % Hz",~hpf.asInteger));
+			~stretchL.set(\hpf, ~hpf);
+			~stretchR.set(\hpf, ~hpf);
 		},
 		1, {
-			~pan = value;
+			~hpf = value;
 			~oled.screen(2,format("Pan: %",~pan.round(1e-2)));
 			~stretchL.set(\pan, ~pan);
 			~stretchR.set(\pan, ~pan);
@@ -55,7 +55,7 @@
 ~envBuf.loadCollection(~envSignal);
 
 // SynthDefs
-SynthDef(\paulstretchMono, { |out = 0, bufnum, envBufnum, pan = 0, stretch = 50, window = 0.25, amp = 1|
+SynthDef(\paulstretchMono, { |out = 0, bufnum, envBufnum, pan = 0.5, stretch = 50, window = 0.25, amp = 1, hpf = 20|
 	// Paulstretch for SuperCollider
 	// Based on the Paul's Extreme Sound Stretch algorithm by Nasca Octavian PAUL
 	// https://github.com/paulnasca/paulstretch_python/blob/master/paulstretch_steps.png
@@ -100,7 +100,7 @@ SynthDef(\paulstretchMono, { |out = 0, bufnum, envBufnum, pan = 0, stretch = 50,
 	// Delay second grain by half a grain length for superposition
 	sig[1] = DelayC.ar(sig[1], trigPeriod/2, trigPeriod/2);
 	// Panned output
-	Out.ar(out, Pan2.ar(Mix.new(sig), pan));
+	Out.ar(out, Pan2.ar(HPF.ar(Mix.new(sig), freq: hpf), pan));
 }).add;
 
 SynthDef(\recBufDef, {
@@ -152,7 +152,8 @@ s.sync;
 		bufnum: ~recBufL.bufnum,
 		envBufnum: ~envBuf.bufnum,
 		stretch: 100,
-		amp: ~wet
+		amp: ~wet,
+		hpf: ~hpf
 	]
 );
 ~stretchR = Synth(\paulstretchMono,
@@ -162,5 +163,6 @@ s.sync;
 		envBufnum: ~envBuf.bufnum,
 		stretch: 100,
 		amp: ~wet
+		hpf: ~hpf
 	]
 );
