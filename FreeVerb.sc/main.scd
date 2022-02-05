@@ -8,25 +8,31 @@
 ~oled.screen(3,format("Room: %",~room.round(1e-4)));
 ~oled.screen(5,~mainVolume);
 
+~knob0func = { arg value;
+	~damp = value;
+	~oled.screen(1,format("Damp: %",~damp.round(1e-2)));
+	~reverb.set(\damp, ~damp);
+};
+~knob1func = { arg value;
+	~mix = value;
+	~oled.screen(2,format("Mix: %",~mix.round(1e-2)));
+	~reverb.set(\mix, ~mix);
+};
+~knob2func = { arg value;
+	~room = value;
+	~oled.screen(3,format("Room: %",~room.round(1e-2)));
+	~reverb.set(\rev, ~room);
+};
+~knob3func = { arg value;
+};
+
 // create knob callback
 ~knobfunc = {
 	arg func, msg, knob, value;
 	switch (knob,
-		0, {
-			~damp = value;
-			~oled.screen(1,format("Damp: %",~damp.round(1e-2)));
-			~reverb.set(\damp, ~damp);
-		},
-		1, {
-			~mix = value;
-			~oled.screen(2,format("Mix: %",~mix.round(1e-2)));
-			~reverb.set(\mix, ~mix);
-		},
-		2, {
-			~room = value;
-			~oled.screen(3,format("Room: %",~room.round(1e-2)));
-			~reverb.set(\rev, ~room);
-		}
+		0, { ~knob0func.value(value); },
+		1, { ~knob1func.value(value); },
+		2, { ~knob2func.value(value); }
 	);
 };
 
